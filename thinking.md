@@ -23,11 +23,11 @@ If no human responds within 30 minutes, escalate to the next person in a defined
 
 **Question C — The Learning**
 
-Three hot water complaints in two months is a maintenance pattern, not a guest relations problem.
-
+If there are three hot water problems in a single month then it is a maintenance problem and nothing related to guest. Therefore the caretaker and the maintenance person needs to be notified so that they can fix that on an unrgent basis. 
 The system should:
 
-- **Tag all three incidents** with a `recurring_issue` flag linked to `property_id: villa-b1` and issue type `hot_water`
+- **Tag all three incidents** with a `recurring_issue` flag linked to `property_id: villa-b1` and issue type `hot_water`. If a complaint was raised then the `complaint_id:` should also be mentioned. 
+- **Live tracker** should be present keeping the property owner in loop so that he can also track the progress.
 - **Trigger a maintenance alert** to the property manager after the second occurrence, not the third
 - **Generate a weekly property health report** — complaints grouped by property, issue type, and frequency. If any issue appears more than once in 30 days, it surfaces automatically
 - **Add a pre-arrival checklist item** for Villa B1 specifically: caretaker verifies hot water before every check-in until the issue is formally resolved and closed
