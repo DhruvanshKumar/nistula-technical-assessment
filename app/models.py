@@ -1,10 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, Literal
 from datetime import datetime
-
-
 SourceType = Literal["whatsapp", "booking_com", "airbnb", "instagram", "direct"]
-
 QueryType = Literal[
     "pre_sales_availability",
     "pre_sales_pricing",
@@ -13,10 +10,7 @@ QueryType = Literal[
     "complaint",
     "general_enquiry",
 ]
-
 ActionType = Literal["auto_send", "agent_review", "escalate"]
-
-
 class InboundMessage(BaseModel):
     source: SourceType
     guest_name: str

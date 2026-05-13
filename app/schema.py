@@ -1,7 +1,5 @@
 import uuid
 from app.models import InboundMessage
-
-
 def normalise_message(payload: InboundMessage, query_type: str) -> dict:
     """
     Convert a raw InboundMessage into the unified schema dict.

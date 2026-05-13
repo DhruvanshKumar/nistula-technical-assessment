@@ -1,43 +1,11 @@
-"""
-Claude API handler.
-
-Builds a system prompt with property context, sends the normalised
-message, and parses the structured JSON response that includes both
-the drafted reply and a self-assessed confidence score from Claude.
-
-Confidence scoring logic
-─────────────────────────
-Claude is asked to return a JSON object with two fields:
-  reply        — the drafted guest-facing message
-  confidence   — a float 0-1 it assigns based on:
-                   • Whether the query falls inside known property facts
-                   • Whether there is any ambiguity in the request
-                   • Whether the booking reference / dates are clearly stated
-
-We then CLAMP and BLEND this with a local heuristic:
-  local_score = 1.0  if query_type is post_sales_checkin  (facts are definite)
-              = 0.9  if pre_sales_availability / pre_sales_pricing
-              = 0.75 if general_enquiry / special_request
-              = 0.40 if complaint  (always escalate)
-
-final_confidence = 0.7 * claude_confidence + 0.3 * local_score
-
-This blend prevents a hallucinating model from self-reporting 1.0 on
-something we know is uncertain (e.g., a complaint), and gives us a
-safety floor even if the API returns a malformed confidence value.
-"""
-
 import os
 import json
 import httpx
 import logging
 from typing import Tuple
-
 logger = logging.getLogger(__name__)
-
 ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages"
 MODEL = "claude-sonnet-4-20250514"
-
 PROPERTY_CONTEXT = """
 Property: Villa B1, Assagao, North Goa
 Bedrooms: 3 | Max guests: 6 | Private pool: Yes
@@ -50,7 +18,6 @@ Chef on call: Yes, pre-booking required
 Availability April 20-24: Available
 Cancellation: Free cancellation up to 7 days before check-in
 """.strip()
-
 # Local heuristic weights per query type
 LOCAL_SCORES = {
     "post_sales_checkin": 1.0,
@@ -60,15 +27,11 @@ LOCAL_SCORES = {
     "special_request": 0.75,
     "complaint": 0.40,
 }
-
 SYSTEM_PROMPT = f"""
 You are a warm, professional guest relations assistant for Nistula, a luxury villa hospitality brand in Goa, India.
-
 PROPERTY CONTEXT:
 {PROPERTY_CONTEXT}
-
 Your job is to draft a helpful, friendly reply to a guest message.
-
 RULES:
 1. Always address the guest by their first name.
 2. Keep replies concise but complete — answer every question asked.
@@ -76,20 +39,17 @@ RULES:
 4. Never invent facts (rates, dates, amenities) not listed in the property context.
 5. Match the tone of the source channel: WhatsApp = casual and warm; Booking.com / Airbnb = slightly more formal.
 6. For complaints, acknowledge the issue empathetically without admitting liability; promise follow-up.
-
 RESPONSE FORMAT — you must return ONLY valid JSON, no markdown, no extra text:
 {{
   "reply": "<guest-facing message>",
   "confidence": <float between 0.0 and 1.0>
 }}
-
 Set confidence based on:
 - 1.0 if you can answer every part of the message definitively from the context above
 - 0.7-0.9 if you can answer most parts but are making minor assumptions
 - 0.4-0.6 if significant parts of the question need external confirmation
 - 0.0-0.4 if this is a complaint or you cannot answer without more info
 """.strip()
-
 
 def _build_user_prompt(msg: dict) -> str:
     channel_label = {

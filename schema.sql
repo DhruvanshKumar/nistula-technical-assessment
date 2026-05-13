@@ -8,12 +8,6 @@
 -- -----------------------------------------------------------------------------
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";   -- UUID generation
 CREATE EXTENSION IF NOT EXISTS "citext";       -- Case-insensitive text (email matching)
-
-
--- =============================================================================
--- REFERENCE / ENUM TYPES
--- =============================================================================
-
 CREATE TYPE channel_source AS ENUM (
     'whatsapp', 'booking_com', 'airbnb', 'instagram', 'direct'
 );
@@ -43,12 +37,6 @@ CREATE TYPE reservation_status AS ENUM (
     'enquiry', 'tentative', 'confirmed', 'checked_in', 'checked_out', 'cancelled'
 );
 
-
--- =============================================================================
--- TABLE: properties
--- Reference data. Kept separate so property context can be queried
--- for prompt building rather than hard-coded.
--- =============================================================================
 
 CREATE TABLE properties (
     property_id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
