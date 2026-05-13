@@ -121,13 +121,11 @@ async def get_claude_reply(normalised: dict) -> Tuple[str, float]:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY not set in environment")
-
     headers = {
         "x-api-key": api_key,
         "anthropic-version": "2023-06-01",
         "content-type": "application/json",
     }
-
     body = {
         "model": MODEL,
         "max_tokens": 1000,
@@ -136,44 +134,30 @@ async def get_claude_reply(normalised: dict) -> Tuple[str, float]:
             {"role": "user", "content": _build_user_prompt(normalised)}
         ],
     }
-
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.post(ANTHROPIC_API_URL, headers=headers, json=body)
             response.raise_for_status()
-
         data = response.json()
         raw_text = data["content"][0]["text"].strip()
         logger.debug(f"Claude raw response: {raw_text}")
-
         parsed = json.loads(raw_text)
         reply = parsed.get("reply", "")
         claude_confidence = float(parsed.get("confidence", 0.5))
         claude_confidence = max(0.0, min(1.0, claude_confidence))  # clamp
-
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse Claude JSON response: {e} | raw: {raw_text}")
         reply = raw_text  # use raw text as fallback reply
         claude_confidence = 0.5
-
     except httpx.HTTPStatusError as e:
         logger.error(f"Claude API HTTP error: {e.response.status_code} — {e.response.text}")
         raise HTTPException(status_code=502, detail=f"Claude API error: {e.response.status_code}")
-
     except Exception as e:
         logger.error(f"Unexpected error calling Claude: {e}", exc_info=True)
         raise
-
-    # Blend Claude self-score with local heuristic
     local_score = LOCAL_SCORES.get(normalised["query_type"], 0.7)
     final_confidence = 0.7 * claude_confidence + 0.3 * local_score
-
-    # Complaints are always capped low to force escalation
     if normalised["query_type"] == "complaint":
         final_confidence = min(final_confidence, 0.55)
-
     return reply, final_confidence
-
-
-# Avoid circular import for HTTPException usage in handler
-from fastapi import HTTPException  # noqa: E402
+from fastapi import HTTPException

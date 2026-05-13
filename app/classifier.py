@@ -5,10 +5,7 @@ This avoids a round-trip to Claude just for classification and keeps
 latency low. For production, a fine-tuned embedding classifier or a
 lightweight LLM call could replace this.
 """
-
 import re
-
-# Ordered by specificity — first match wins
 _RULES = [
     (
         "complaint",
@@ -35,16 +32,9 @@ _RULES = [
         r".*",  # catch-all
     ),
 ]
-
-
 def classify_query(message: str) -> str:
-    """Return the query type for the given message text."""
     lowered = message.lower()
-
-    # Special_request keywords overlap with post_sales — check complaint first
-    # then do a two-pass for special_request vs post_sales
     for query_type, pattern in _RULES:
         if re.search(pattern, lowered):
             return query_type
-
     return "general_enquiry"
